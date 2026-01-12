@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juice WRLD AI Studio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; background: #05050a; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        .container { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border-radius: 30px; padding: 30px; width: 90%; max-width: 380px; border: 1px solid #8a2be2; text-align: center; }
+        h1 { color: #ff4d4d; margin: 0; font-size: 24px; letter-spacing: 2px; }
+        input { width: 100%; padding: 15px; margin: 20px 0; border-radius: 12px; border: 1px solid #333; background: #000; color: #fff; box-sizing: border-box; text-align: center; }
+        button { background: linear-gradient(45deg, #8a2be2, #ff4d4d); color: white; border: none; padding: 18px; width: 100%; border-radius: 12px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:active { transform: scale(0.98); }
+        #output { margin-top: 20px; font-size: 14px; color: #ccc; max-height: 150px; overflow-y: auto; font-style: italic; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div id="canvas-bg" style="position:fixed; top:0; z-index:1;"></div>
+    <div class="container">
+        <div class="glass">
+            <h1>JUICE AI STUDIO</h1>
+            <p style="font-size: 12px; color: #888;">AI Cover Generator & Lyricist</p>
+            <input type="text" id="topic" placeholder="Enter topic (e.g. Lost in the Abyss)">
+            <button onclick="generate()">GENERATE AI COVER</button>
+            <div id="output">Waiting for your vibe...</div>
+        </div>
+    </div>
+    <script>
+        // Kitsune visualization
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('canvas-bg').appendChild(renderer.domElement);
+        const obj = new THREE.Mesh(new THREE.IcosahedronGeometry(2, 1), new THREE.MeshPhongMaterial({ color: 0x8a2be2, wireframe: true }));
+        scene.add(obj); scene.add(new THREE.PointLight(0xffffff, 1, 100)); camera.position.z = 5;
+        function animate() { requestAnimationFrame(animate); obj.rotation.y += 0.01; renderer.render(scene, camera); }
+        animate();
+
+        async function generate() {
+            const topic = document.getElementById('topic').value;
+            const out = document.getElementById('output');
+            const p1 = "AIzaSyCXu7PDHhZBIqM"; 
+            const p2 = "dkslJVJzfHBdIl6fFQ1Q";
+            
+            out.innerText = "Connecting to Juice WRLD's brain...";
+            
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${p1}${p2}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `Write a short Juice WRLD style verse about ${topic}` }] }] })
+                });
+                const data = await res.json();
+                const lyrics = data.candidates[0].content.parts[0].text;
+                out.innerText = lyrics;
+
+                // FREE RVC Voice
+                const speech = new SpeechSynthesisUtterance(lyrics);
+                speech.lang = 'en-US';
+                speech.rate = 0.8; 
+                window.speechSynthesis.speak(speech);
+
+            } catch(e) { out.innerText = "Connection error. Please try again."; }
+        }
+    </script>
+</body>
+</html>
