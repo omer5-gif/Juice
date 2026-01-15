@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000">
+    <title>MYTHOS: NIGHT CITY</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --cyber-yellow: #fce300; 
+            --cyber-blue: #00e5ff; 
+            --cyber-red: #ff003c; 
+            --cyber-purple: #b026ff; /* צבע לקעקועים */
+            --bg: #050505;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; outline: none; }
+        body { 
+            margin: 0; font-family: 'Share Tech Mono', monospace; height: 100vh; 
+            display: flex; flex-direction: column; overflow: hidden; 
+            background: var(--bg); color: var(--cyber-blue);
+            font-size: 18px; /* הגדלת טקסט בסיסי */
+        }
+
+        /* Scanlines */
+        body::after {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 1000; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        }
+
+        /* Top Bar */
+        .top-bar { 
+            height: 70px; border-bottom: 2px solid var(--cyber-yellow); 
+            display: flex; justify-content: space-between; align-items: center; padding: 0 25px;
+            background: rgba(20,20,20,0.95); box-shadow: 0 0 20px rgba(252, 227, 0, 0.3);
+        }
+        .glitch-text { 
+            color: var(--cyber-yellow); font-size: 24px; font-weight: bold; letter-spacing: 2px;
+            text-shadow: 2px 0 var(--cyber-red), -2px 0 var(--cyber-blue);
+        }
+
+        /* Content */
+        .main-content { flex: 1; position: relative; width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; }
+        .tab-view { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: none; flex-direction: column; padding: 25px; padding-bottom: 100px; }
+        .tab-view.active { display: flex; animation: slideIn 0.3s ease-out; }
+
+        /* Cards - Bigger & Bolder */
+        .cyber-card {
+            background: rgba(10, 12, 18, 0.95);
+            border: 2px solid var(--cyber-blue);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+            padding: 20px; width: 100%; flex: 1;
+            display: flex; flex-direction: column;
+            clip-path: polygon(0 0, 100% 0, 100% 90%, 92% 100%, 0 100%);
+            margin-bottom: 20px; overflow-y: auto;
+        }
+
+        /* Games */
+        canvas { 
+            border: 2px solid var(--cyber-red); background: #000; 
+            width: 100%; height: 100%; max-height: 400px; /* תצוגה גדולה יותר */
+            box-shadow: 0 0 20px rgba(255, 0, 60, 0.4); flex: 1;
+        }
+        
+        .matrix-grid { 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; /* רווח גדול יותר */
+            margin: 20px 0; width: 100%; flex: 1;
+        }
+        .matrix-cell {
+            background: rgba(0, 229, 255, 0.1); border: 1px solid var(--cyber-blue);
+            color: var(--cyber-blue); font-size: 20px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.1s;
+        }
+        .matrix-cell:active { background: var(--cyber-yellow); color: black; }
+        .matrix-cell.target-row { border: 2px solid var(--cyber-yellow); box-shadow: inset 0 0 10px var(--cyber-yellow); }
+
+        /* Tattoo Studio (Cyber Style) */
+        .tattoo-box {
+            border: 1px dashed var(--cyber-purple); padding: 20px; margin-top: 10px;
+            background: rgba(176, 38, 255, 0.05); border-radius: 5px; text-align: center;
+        }
+        .prompt-text {
+            font-family: monospace; color: var(--cyber-purple); font-size: 14px;
+            background: #111; padding: 15px; margin-top: 15px; border: 1px solid #333;
+            word-break: break-all; text-align: left;
+        }
+
+        /* Buttons */
+        .cyber-btn {
+            background: var(--cyber-red); color: black; font-weight: bold;
+            border: none; padding: 20px; font-size: 22px; /* כפתורים ענקיים */
+            font-family: 'Share Tech Mono', monospace;
+            clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
+            cursor: pointer; width: 100%; margin-top: auto; letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .cyber-btn:active { background: #fff; transform: translateY(2px); }
+
+        /* Navigation - 4 Items */
+        .nav-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 90px; /* גבוה יותר */
+            background: #080808; border-top: 3px solid var(--cyber-yellow);
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 100; padding-bottom: 5px;
+        }
+        .nav-item { 
+            color: #666; font-size: 14px; text-align: center; width: 25%;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            transition: 0.2s;
+        }
+        .nav-item.active { 
+            color: var(--cyber-yellow); text-shadow: 0 0 10px var(--cyber-yellow); transform: translateY(-5px); 
+        }
+        .nav-icon { font-size: 28px; }
+
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div class="glitch-text">MYTHOS: NIGHT CITY</div>
+        <img src="https://i.ibb.co/3ykVvX4/289.jpg" style="width:40px; height:40px; border:2px solid var(--cyber-blue); border-radius:50%;">
+    </div>
+
+    <div class="main-content">
+        
+        <div id="tab-arcade" class="tab-view active">
+            <div class="cyber-card" style="border-color: var(--cyber-yellow);">
+                <div style="display:flex; justify-content:space-between; color:var(--cyber-yellow); font-size:22px; margin-bottom:10px;">
+                    <span>BREACH PROTOCOL</span>
+                    <span id="hack-timer">--:--</span>
+                </div>
+                
+                <div style="font-size:24px; text-align:center; letter-spacing:4px; margin-bottom:15px; color:#fff;" id="target-seq">E9 55 BD</div>
+                <div style="font-size:16px; text-align:center; color:var(--cyber-blue); margin-bottom:10px;" id="player-buffer">BUFFER: [ ] [ ] [ ]</div>
+                
+                <div class="matrix-grid" id="matrix"></div>
+                <div id="hack-status" style="text-align:center; color:white; font-size:18px;">INITIALIZING...</div>
+            </div>
+            
+            <button class="cyber-btn" onclick="initBreach()">REBOOT SYSTEM</button>
+            <div style="text-align:center; margin-top:15px;">
+                <button style="background:none; border:none; color:var(--cyber-blue); font-size:16px; text-decoration:underline;" onclick="switchTab('runner')">SWITCH TO RUNNER >></button>
+            </div>
+        </div>
+
+        <div id="tab-runner" class="tab-view">
+             <div class="cyber-card" style="border-color: var(--cyber-red);">
+                <div style="color:var(--cyber-red); font-size:24px; text-align:center; margin-bottom:10px;">NEON BIKE RUN</div>
+                <canvas id="runCanvas"></canvas>
+             </div>
+             <button class="cyber-btn" style="background:var(--cyber-blue);" onclick="initRunner()">START ENGINE</button>
+             <div style="text-align:center; margin-top:15px;">
+                <button style="background:none; border:none; color:var(--cyber-yellow); font-size:16px;" onclick="switchTab('arcade')"><< BACK TO BREACH</button>
+            </div>
+        </div>
+
+        <div id="tab-ink" class="tab-view">
+            <div class="cyber-card" style="border-color: var(--cyber-purple);">
+                <div style="color:var(--cyber-purple); font-size:24px; text-align:center; margin-bottom:5px;">INK_LAB v2.0</div>
+                <div style="color:#888; text-align:center; font-size:14px; margin-bottom:20px;">GENERATING CUSTOM DESIGNS...</div>
+
+                <div class="tattoo-box">
+                    <strong style="font-size:22px; display:block; margin-bottom:10px; color:#fff;" id="t-title">LOADING...</strong>
+                    <div style="color:#ccc; font-size:16px; line-height:1.5;" id="t-desc">...</div>
+                </div>
+
+                <div class="prompt-text" id="t-prompt" onclick="copyPrompt()">[PROMPT WILL APPEAR HERE]</div>
+                <div style="font-size:12px; color:#666; text-align:center; margin-top:5px;">TAP TEXT TO COPY</div>
+            </div>
+            <button class="cyber-btn" style="background:var(--cyber-purple); color:white;" onclick="nextTattoo()">GENERATE NEW INK</button>
+        </div>
+
+        <div id="tab-stories" class="tab-view">
+            <div class="cyber-card">
+                <div style="color:var(--cyber-blue); margin-bottom:15px; font-size:20px;">DATASHARD: ARCHIVE</div>
+                <div style="font-size:18px; line-height:1.6; color:#ddd;" id="story-display">Connecting...</div>
+            </div>
+            <button class="cyber-btn" style="background:var(--cyber-blue);" onclick="nextStory()">NEXT SHARD</button>
+        </div>
+
+        <div id="tab-music" class="tab-view">
+            <div class="cyber-card" style="padding:0; overflow:hidden;">
+                <iframe id="spotify-frame" style="width:100%; height:100%; border:none;" src="" allow="encrypted-media"></iframe>
+            </div>
+            <button class="cyber-btn" style="background:var(--cyber-yellow);" onclick="nextSong()">NEXT TRACK</button>
+        </div>
+
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchTab('arcade')">
+            <span class="nav-icon">👾</span>
+            <span>GAMES</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('ink')">
+            <span class="nav-icon">🐉</span>
+            <span>INK_LAB</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('stories')">
+            <span class="nav-icon">💾</span>
+            <span>DATA</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('music')">
+            <span class="nav-icon">📻</span>
+            <span>RADIO</span>
+        </div>
+    </div>
+
+    <script>
+        // --- BREACH PROTOCOL ---
+        const codes = ['1C', '55', 'E9', 'BD', '7A'];
+        let matrix = [], sequence = [], buffer = [], isRowTurn = true, activeIndex = 0, gameOver = false;
+
+        function initBreach() {
+            const grid = document.getElementById('matrix');
+            grid.innerHTML = ''; matrix = []; buffer = [];
+            sequence = [codes[Math.floor(Math.random()*codes.length)], codes[Math.floor(Math.random()*codes.length)], codes[Math.floor(Math.random()*codes.length)]];
+            document.getElementById('target-seq').innerText = sequence.join(' ');
+            document.getElementById('player-buffer').innerText = "BUFFER: [ ] [ ] [ ]";
+            document.getElementById('hack-status').innerText = "SELECT ROW 1"; document.getElementById('hack-status').style.color = "white";
+            isRowTurn = true; activeIndex = 0; gameOver = false;
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    let val = codes[Math.floor(Math.random() * codes.length)];
+                    let cell = document.createElement('div');
+                    cell.className = 'matrix-cell';
+                    if (r === 0) cell.classList.add('target-row');
+                    cell.innerText = val; cell.dataset.r = r; cell.dataset.c = c;
+                    cell.onclick = () => selectCell(r, c, val, cell);
+                    grid.appendChild(cell);
+                    matrix.push({r, c, val, el: cell});
+                }
+            }
+        }
+
+        function selectCell(r, c, val, cell) {
+            if (gameOver || (isRowTurn && r !== activeIndex) || (!isRowTurn && c !== activeIndex) || cell.classList.contains('disabled')) return;
+            
+            buffer.push(val); cell.classList.add('active', 'disabled');
+            document.getElementById('player-buffer').innerText = "BUFFER: " + buffer.map(x => `[${x}]`).join(' ');
+
+            if (buffer.length === sequence.length) {
+                gameOver = true;
+                const win = buffer.join('') === sequence.join('');
+                document.getElementById('hack-status').innerText = win ? "ACCESS GRANTED" : "BREACH FAILED";
+                document.getElementById('hack-status').style.color = win ? "#00e5ff" : "#ff003c";
+                return;
+            }
+
+            isRowTurn = !isRowTurn; activeIndex = isRowTurn ? r : c;
+            matrix.forEach(m => {
+                m.el.classList.remove('target-row');
+                if (!m.el.classList.contains('disabled')) {
+                    if ((isRowTurn && m.r === activeIndex) || (!isRowTurn && m.c === activeIndex)) m.el.classList.add('target-row');
+                }
+            });
+            document.getElementById('hack-status').innerText = isRowTurn ? `SELECT ROW` : `SELECT COL`;
+        }
+
+        // --- TATTOO STUDIO (CYBER EDITION) ---
+        const tattooIdeas = [
+            { t: "Cyber-Kitsune", d: "מסכת שועל יפני עם מעגלים מודפסים זוהרים בעיניים. שילוב של מסורת ועתיד.", p: "Cyberpunk Kitsune mask tattoo, glowing circuit board eyes, neon accents, traditional japanese style mixed with sci-fi elements." },
+            { t: "Beelzebub's Glitch", d: "סמל הזבוב של בעל זבוב, אבל חצי ממנו מתפרק לפיקסלים וגליצ'ים דיגיטליים.", p: "Beelzebub fly symbol tattoo, half realistic half digital glitch effect, pixel sorting, cybernetic wings, dark aesthetic." },
+            { t: "Hades' Neural Link", d: "הקלשון של האדס מחובר לעמוד השדרה עם כבלי נתונים וכניסות USB.", p: "Hades Bident weapon connected to spine with cybernetic cables, biomechanical tattoo style, futuristic data ports, blackwork." },
+            { t: "Juice WRLD: System Error", d: "המספר 999 בתוך הודעת שגיאה של מחשב ישן, עם הילה סגולה.", p: "999 number inside retro computer error window, system failure text, purple neon glow, vaporwave aesthetic tattoo." }
+        ];
+
+        function nextTattoo() {
+            const i = tattooIdeas[Math.floor(Math.random()*tattooIdeas.length)];
+            document.getElementById('t-title').innerText = i.t;
+            document.getElementById('t-desc').innerText = i.d;
+            document.getElementById('t-prompt').innerText = i.p;
+        }
+        function copyPrompt() {
+            navigator.clipboard.writeText(document.getElementById('t-prompt').innerText);
+            alert("COPIED TO CLIPBOARD");
+        }
+
+        // --- GENERAL ---
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-view').forEach(e => e.classList.remove('active'));
+            if(tab === 'runner') document.getElementById('tab-runner').classList.add('active');
+            else document.getElementById('tab-' + tab).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            if(tab.includes('arcade') || tab.includes('runner')) document.querySelectorAll('.nav-item')[0].classList.add('active');
+            if(tab === 'ink') document.querySelectorAll('.nav-item')[1].classList.add('active');
+            if(tab === 'stories') document.querySelectorAll('.nav-item')[2].classList.add('active');
+            if(tab === 'music') document.querySelectorAll('.nav-item')[3].classList.add('active');
+
+            if(tab === 'arcade') initBreach();
+        }
+
+        // --- RUNNER GAME (Resized) ---
+        const cvs = document.getElementById('runCanvas'); const cx = cvs.getContext('2d');
+        let bike = {x:50,y:250,dy:0,jump:false}, obs=[], rScore=0, rId;
+        
+        function initRunner() {
+            // התאמת גודל קנבס למסך מלא בתוך הכרטיס
+            cvs.width = cvs.parentElement.clientWidth - 40; 
+            cvs.height = 300; 
+            bike.y = 250; obs = []; loopRunner();
+        }
+        function loopRunner() {
+            cx.fillStyle="#000"; cx.fillRect(0,0,cvs.width,cvs.height);
+            cx.strokeStyle="#ff003c"; cx.beginPath(); cx.moveTo(0,280); cx.lineTo(cvs.width,280); cx.stroke();
+            
+            if(bike.jump) bike.dy+=0.8; bike.y+=bike.dy;
+            if(bike.y>250){bike.y=250; bike.jump=false; bike.dy=0;}
+            
+            cx.fillStyle="#00e5ff"; cx.fillRect(bike.x, bike.y, 40, 30);
+            
+            if(Math.random()<0.02) obs.push({x:cvs.width, w:20, h:30});
+            obs.forEach(o => {
+                o.x-=6; cx.fillStyle="#fce300"; cx.fillRect(o.x, 250, o.w, o.h);
+                if(bike.x < o.x+o.w && bike.x+40 > o.x && bike.y+30 > 250) { obs=[]; alert("CRASHED"); }
+            });
+            rId = requestAnimationFrame(loopRunner);
+        }
+        cvs.addEventListener('touchstart', (e)=>{e.preventDefault(); if(!bike.jump){bike.dy=-15; bike.jump=true;}});
+        cvs.addEventListener('mousedown', ()=>{if(!bike.jump){bike.dy=-15; bike.jump=true;}});
+
+        // --- DATA LOAD ---
+        let stories = JSON.parse(localStorage.getItem('m_stories')) || [{title:"System Ready", content:"Connect to the net."}];
+        function nextStory() {
+            let s = stories[Math.floor(Math.random()*stories.length)];
+            document.getElementById('story-display').innerHTML = `<strong style="color:var(--cyber-yellow)">${s.title}</strong><br>${s.content}`;
+        }
+        let music = JSON.parse(localStorage.getItem('m_music')) || [];
+        function nextSong() {
+            if(music.length>0) document.getElementById('spotify-frame').src = `https://open.spotify.com/embed/track/${music[Math.floor(Math.random()*music.length)]}?utm_source=generator&theme=0`;
+        }
+
+        window.onload = () => { initBreach(); nextTattoo(); if(music.length>0)nextSong(); };
+    </script>
+</body>
+</html>
